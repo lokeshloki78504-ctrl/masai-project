@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodHub - Order Delicious Food</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .cart-icon {
+            cursor: pointer;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #ff6b6b;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Search Bar */
+        .search-container {
+            padding: 30px 20px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+
+        /* Categories */
+        .categories {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+        }
+
+        .category-btn {
+            padding: 10px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Food Grid */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .food-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .food-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .food-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .food-info {
+            padding: 20px;
+        }
+
+        .food-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .food-description {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .food-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .rating {
+            font-size: 14px;
+            color: #ff9800;
+        }
+
+        .add-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .add-btn:hover {
+            background: #764ba2;
+        }
+
+        /* Cart Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .cart-panel {
+            background: white;
+            width: 400px;
+            height: 100%;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .cart-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .cart-items {
+            padding: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            align-items: center;
+        }
+
+        .cart-item-info h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .cart-item-price {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .cart-item-remove {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .cart-footer {
+            padding: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .checkout-btn:hover {
+            opacity: 0.9;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .food-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+
+            .cart-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">🍕 FoodHub</div>
+            <div class="cart-icon" onclick="toggleCart()">
+                🛒
+                <span class="cart-count" id="cart-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" placeholder="Search for delicious food..." id="search-input">
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories">
+        <button class="category-btn active" onclick="filterCategory('all')">All</button>
+        <button class="category-btn" onclick="filterCategory('pizza')">Pizza</button>
+        <button class="category-btn" onclick="filterCategory('burger')">Burger</button>
+        <button class="category-btn" onclick="filterCategory('pasta')">Pasta</button>
+        <button class="category-btn" onclick="filterCategory('dessert')">Dessert</button>
+        <button class="category-btn" onclick="filterCategory('drinks')">Drinks</button>
+    </div>
+
+    <!-- Food Menu -->
+    <div class="container">
+        <div class="food-grid" id="food-grid"></div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cart-modal">
+        <div class="cart-panel">
+            <div class="cart-header">
+                Your Cart
+                <button class="close-btn" onclick="toggleCart()">×</button>
+            </div>
+            <div class="cart-items" id="cart-items"></div>
+            <div class="cart-footer">
+                <div class="total">
+                    <span>Total:</span>
+                    <span id="total-price">$0.00</span>
+                </div>
+                <button class="checkout-btn" onclick="checkout()">Checkout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Food Data
+        const foods = [
+            { id: 1, name: 'Classic Margherita', category: 'pizza', price: 12.99, image: '🍕', description: 'Fresh mozzarella, basil, tomato' },
+            { id: 2, name: 'Pepperoni Pizza', category: 'pizza', price: 14.99, image: '🍕', description: 'Loaded with pepperoni' },
+            { id: 3, name: 'Veggie Burger', category: 'burger', price: 11.99, image: '🍔', description: 'Fresh vegetables and plant-based patty' },
+            { id: 4, name: 'Bacon Cheeseburger', category: 'burger', price: 13.99, image: '🍔', description: 'Juicy beef with crispy bacon' },
+            { id: 5, name: 'Spaghetti Carbonara', category: 'pasta', price: 13.99, image: '🍝', description: 'Classic Italian pasta' },
+            { id: 6, name: 'Penne Arrabbiata', category: 'pasta', price: 12.99, image: '🍝', description: 'Spicy tomato sauce' },
+            { id: 7, name: 'Chocolate Cake', category: 'dessert', price: 5.99, image: '🍰', description: 'Rich and decadent' },
+            { id: 8, name: 'Cheesecake', category: 'dessert', price: 6.99, image: '🍰', description: 'Creamy and delicious' },
+            { id: 9, name: 'Coca Cola', category: 'drinks', price: 2.99, image: '🥤', description: 'Cold refreshing drink' },
+            { id: 10, name: 'Iced Coffee', category: 'drinks', price: 4.99, image: '☕', description: 'Smooth and cool' },
+        ];
+
+        let cart = [];
+        let filteredFoods = foods;
+
+        // Initialize
+        function init() {
+            renderFoods(foods);
+        }
+
+        // Render Food Items
+        function renderFoods(items) {
+            const grid = document.getElementById('food-grid');
+            grid.innerHTML = items.map(food => `
+                <div class="food-card">
+                    <div class="food-image">${food.image}</div>
+                    <div class="food-info">
+                        <div class="food-name">${food.name}</div>
+                        <div class="food-description">${food.description}</div>
+                        <div class="food-footer">
+                            <span class="price">$${food.price.toFixed(2)}</span>
+                            <span class="rating">⭐ 4.5</span>
+                            <button class="add-btn" onclick="addToCart(${food.id})">Add</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter by Category
+        function filterCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (category === 'all') {
+                filteredFoods = foods;
+            } else {
+                filteredFoods = foods.filter(food => food.category === category);
+            }
+            renderFoods(filteredFoods);
+        }
+
+        // Add to Cart
+        function addToCart(foodId) {
+            const food = foods.find(f => f.id === foodId);
+            const existingItem = cart.find(item => item.id === foodId);
+
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...food, quantity: 1 });
+            }
+
+            updateCart();
+        }
+
+        // Remove from Cart
+        function removeFromCart(foodId) {
+            cart = cart.filter(item => item.id !== foodId);
+            updateCart();
+        }
+
+        // Update Cart Display
+        function updateCart() {
+            const cartCount = document.getElementById('cart-count');
+            const cartItems = document.getElementById('cart-items');
+            const totalPrice = document.getElementById('total-price');
+
+            cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<div class="empty-cart">Your cart is empty. Add some delicious food!</div>';
+                totalPrice.textContent = '$0.00';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h3>${item.name}</h3>
+                            <div>Qty: ${item.quantity}</div>
+                        </div>
+                        <div>
+                            <div class="cart-item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+                            <button class="cart-item-remove" onclick="removeFromCart(${item.id})">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                totalPrice.textContent = '$' + total.toFixed(2);
+            }
+        }
+
+        // Toggle Cart
+        function toggleCart() {
+            document.getElementById('cart-modal').classList.toggle('active');
+        }
+
+        // Checkout
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            alert(`Order confirmed! Total: $${total.toFixed(2)}\nThank you for your order!`);
+            cart = [];
+            updateCart();
+            toggleCart();
+        }
+
+        // Search
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const results = foods.filter(food => 
+                food.name.toLowerCase().includes(searchTerm) ||
+                food.description.toLowerCase().includes(searchTerm)
+            );
+            renderFoods(results);
+        });
+
+        // Initialize on Load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

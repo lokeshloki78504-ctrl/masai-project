@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Product Card Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card-generator">
+            <h2>AI Product Card Generator</h2>
+            <p class="subtitle">Generate marketing copy for your product ideas</p>
+            
+            <input type="text" id="productInput" placeholder="AI Study Buddy...">
+            <button id="generateBtn" onclick="generateProductCard()">GENERATE CARD</button>
+            
+            <div id="resultCard" class="result-card" style="display: none;">
+                <div class="icon">🤖</div>
+                <h3 id="resTitle">StudyGenius</h3>
+                <p id="resTagline" class="tagline">"Study smart. Succeed brilliantly."</p>
+                <p id="resDesc" class="description">Loading details...</p>
+                
+                <div class="btn-group">
+                    <button class="btn-copy" onclick="copyText()">📋 Copy Content</button>
+                    <button class="btn-reset" onclick="resetForm()">🔄 Generate Another</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

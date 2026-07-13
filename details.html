@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Details</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="detail-page">
+      <button class="back-link" type="button" onclick="window.location.href='index.html'">
+        ← Back to Home
+      </button>
+      <section class="detail-card">
+        <p class="eyebrow">Mini Details</p>
+        <h1>AI app overview</h1>
+        <p>
+          This page shows a compact view of your AI web app features, designed to
+          feel modern, focused, and easy to scan.
+        </p>
+
+        <div class="button-row">
+          <button class="btn primary" type="button" onclick="openChatDetail()">Open Chat</button>
+          <button class="btn secondary" type="button" onclick="createNewChatDetail()">Create Chat</button>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <h3>Feature 1</h3>
+            <p>Real-time AI suggestions for a polished experience.</p>
+          </div>
+          <div>
+            <h3>Feature 2</h3>
+            <p>Clean navigation between your home and detail screens.</p>
+          </div>
+          <div>
+            <h3>Feature 3</h3>
+            <p>Simple layout that works well on desktop and mobile.</p>
+          </div>
+        </div>
+      </section>
+      
+      <section class="chat-section">
+        <div class="chat-box">
+          <div class="chat-header">
+            <h3>AI Chat (Details)</h3>
+            <p>Ask questions about the app or features.</p>
+          </div>
+          <div id="chatMessagesDetail" class="chat-messages">
+            <div class="message bot">Hi from Details page — how can I help?</div>
+          </div>
+          <form id="chatFormDetail" class="chat-form">
+            <input id="chatInputDetail" type="text" placeholder="Ask here..." autocomplete="off" />
+            <button class="btn primary" type="submit">Send</button>
+          </form>
+        </div>
+      </section>
+    </main>
+    
+    <script>
+      const formD = document.getElementById('chatFormDetail');
+      const inputD = document.getElementById('chatInputDetail');
+      const messagesD = document.getElementById('chatMessagesDetail');
+
+      function addMessageDetail(text, sender) {
+        const message = document.createElement('div');
+        message.className = `message ${sender}`;
+        message.textContent = text;
+        messagesD.appendChild(message);
+        messagesD.scrollTop = messagesD.scrollHeight;
+      }
+
+      function createNewChatDetail() {
+        messagesD.innerHTML = '';
+        addMessageDetail('New chat created on Details page. Ask me anything.', 'bot');
+        document.getElementById('chatInputDetail').focus();
+        document.querySelector('.chat-section').scrollIntoView({ behavior: 'smooth' });
+      }
+
+      function openChatDetail() {
+        document.querySelector('.chat-section').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('chatInputDetail').focus();
+      }
+
+      function getReplyDetail(text) {
+        const message = text.toLowerCase();
+        if (message.includes('feature')) return 'This detail page highlights the app features and chat demos.';
+        if (message.includes('how') || message.includes('help')) return 'Ask me about features, navigation, or UI.';
+        return 'Nice question — this is a demo answer from the local script.';
+      }
+
+      formD.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const text = inputD.value.trim();
+        if (!text) return;
+        addMessageDetail(text, 'user');
+        inputD.value = '';
+        setTimeout(function () { addMessageDetail(getReplyDetail(text), 'bot'); }, 300);
+      });
+    </script>
+  </body>
+</html>

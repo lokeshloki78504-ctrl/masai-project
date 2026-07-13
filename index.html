@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Web Side</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="nav">
+        <div class="brand">NeuroApp</div>
+        <a href="details.html">Mini Details</a>
+      </nav>
+
+      <div class="hero-content">
+        <div>
+          <p class="eyebrow">AI Web Side App</p>
+          <h1>Build smart experiences with a clean AI landing page.</h1>
+          <p class="description">
+            Welcome to a simple AI-focused web app with a modern home page and a
+            dedicated details page for your mini showcase.
+          </p>
+          <div class="actions">
+            <button class="btn primary" type="button" onclick="window.location.href='details.html'">
+              Open Mini Details
+            </button>
+            <button class="btn secondary" type="button" onclick="document.getElementById('features').scrollIntoView({ behavior: 'smooth' })">
+              Explore Features
+            </button>
+            <button class="btn primary" type="button" onclick="createNewChat()">
+              Create Chat
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Live AI Snapshot</h3>
+          <ul>
+            <li>Fast response</li>
+            <li>Smart suggestions</li>
+            <li>Clean UI design</li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main id="features">
+      <section class="cards">
+        <article class="card">
+          <h3>Smart Chat</h3>
+          <p>Instant answers and smooth conversation flows.</p>
+        </article>
+        <article class="card">
+          <h3>Mini Insights</h3>
+          <p>Quick summaries with simple and attractive screens.</p>
+        </article>
+        <article class="card">
+          <h3>Easy Navigation</h3>
+          <p>Move from home to detail views in a few clicks.</p>
+        </article>
+      </section>
+
+      <section class="chat-section">
+        <div class="chat-box">
+          <div class="chat-header">
+            <h3>AI Chat</h3>
+            <p>Ask anything and get a quick response.</p>
+          </div>
+          <div id="chatMessages" class="chat-messages">
+            <div class="message bot">Hello! I can help with ideas, summaries, or app features.</div>
+          </div>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" type="text" placeholder="Type your message..." autocomplete="off" />
+            <button class="btn primary" type="submit">Send</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('chatForm');
+      const input = document.getElementById('chatInput');
+      const messages = document.getElementById('chatMessages');
+
+      function addMessage(text, sender) {
+        const message = document.createElement('div');
+        message.className = `message ${sender}`;
+        message.textContent = text;
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function createNewChat() {
+        messages.innerHTML = '';
+        addMessage('New chat created. Hello! Ask me anything.', 'bot');
+        document.getElementById('chatInput').focus();
+        document.querySelector('.chat-section').scrollIntoView({ behavior: 'smooth' });
+      }
+
+      function openChat() {
+        document.querySelector('.chat-section').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('chatInput').focus();
+      }
+
+      function getReply(text) {
+        const message = text.toLowerCase();
+
+        if (message.includes('hello') || message.includes('hi')) {
+          return 'Hello! I am ready to help with your project.';
+        }
+
+        if (message.includes('feature') || message.includes('features')) {
+          return 'This app includes a home page, a details page, and a working chat panel.';
+        }
+
+        if (message.includes('price') || message.includes('cost')) {
+          return 'This demo version is free to explore and test.';
+        }
+
+        if (message.includes('help')) {
+          return 'I can help with ideas, summaries, and simple app guidance.';
+        }
+
+        return 'Thanks for your message! I can help with ideas, quick summaries, or app features.';
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const text = input.value.trim();
+
+        if (!text) {
+          return;
+        }
+
+        addMessage(text, 'user');
+        input.value = '';
+
+        setTimeout(function () {
+          addMessage(getReply(text), 'bot');
+        }, 300);
+      });
+    </script>
+  </body>
+</html>

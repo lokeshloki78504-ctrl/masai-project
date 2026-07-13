@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scoring App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .scoring-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .team-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .team-section.team-a {
+            border-top: 5px solid #ff6b6b;
+        }
+
+        .team-section.team-b {
+            border-top: 5px solid #4ecdc4;
+        }
+
+        .team-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .team-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .team-a .team-name {
+            color: #ff6b6b;
+        }
+
+        .team-b .team-name {
+            color: #4ecdc4;
+        }
+
+        .team-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .score-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .score-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .score-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .team-a .score-box {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
+
+        .team-a .score-value {
+            color: #ff6b6b;
+        }
+
+        .team-b .score-box {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+
+        .team-b .score-value {
+            color: #4ecdc4;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #40c057;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffa94d;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ff8c42;
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #45b8ae;
+            transform: translateY(-2px);
+        }
+
+        .overs-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-group button {
+            flex: 1;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .bottom-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .reset-btn {
+            padding: 12px;
+            background: #868e96;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #748087;
+        }
+
+        .summary {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .summary h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .summary-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .summary-team {
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .summary-team h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .summary-team p {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            .scoring-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .runs-quick {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .runs-quick button {
+            padding: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏏 Cricket Scoring App</h1>
+            <p>Live Score Tracking for Both Teams</p>
+        </div>
+
+        <div class="scoring-container">
+            <!-- Team A -->
+            <div class="team-section team-a">
+                <div class="team-header">
+                    <div class="team-name" id="teamAName">Team A</div>
+                    <input type="text" class="team-input" id="teamAInput" placeholder="Enter team name">
+                </div>
+
+                <div class="score-display">
+                    <div class="score-box">
+                        <div class="score-label">Runs</div>
+                        <div class="score-value" id="teamAScore">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label">Wickets</div>
+                        <div class="score-value" id="teamAWickets">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label">Overs</div>
+                        <div class="score-value" id="teamAOvers">0.0</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 15px 0; text-align: center;">
+                    <small style="color: #666; display: block; margin-bottom: 8px;">Quick Add Runs</small>
+                    <div class="runs-quick">
+                        <button class="btn btn-primary" onclick="addRunsA(1)">+1</button>
+                        <button class="btn btn-primary" onclick="addRunsA(2)">+2</button>
+                        <button class="btn btn-primary" onclick="addRunsA(4)">+4</button>
+                        <button class="btn btn-primary" onclick="addRunsA(6)">+6</button>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 12px 0; text-align: center;">
+                    <small style="color: #666; display: block; margin-bottom: 8px;">Ball Types</small>
+                    <div class="runs-quick">
+                        <button class="btn btn-warning" onclick="addBallTypeA('dot')">Dot</button>
+                        <button class="btn btn-warning" onclick="addBallTypeA('wd')">Wide</button>
+                        <button class="btn btn-warning" onclick="addBallTypeA('nb')">No Ball</button>
+                        <button class="btn btn-warning" onclick="addBallTypeA('bye')">Bye</button>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-success" onclick="addRunA()">+ 1 Run</button>
+                    <button class="btn btn-warning" onclick="addWicketA()">Wicket</button>
+                    <button class="btn btn-info" onclick="nextBallA()">Next Ball</button>
+                </div>
+
+                <div class="overs-controls">
+                    <div class="control-group">
+                        <button class="btn btn-danger" onclick="subtractRunA()">- Run</button>
+                        <button class="btn btn-danger" onclick="subtractWicketA()">- Wicket</button>
+                    </div>
+                    <div class="control-group">
+                        <button class="btn btn-danger" onclick="subtractOverA()">- Over</button>
+                        <button class="btn btn-danger" onclick="resetTeamA()">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team B -->
+            <div class="team-section team-b">
+                <div class="team-header">
+                    <div class="team-name" id="teamBName">Team B</div>
+                    <input type="text" class="team-input" id="teamBInput" placeholder="Enter team name">
+                </div>
+
+                <div class="score-display">
+                    <div class="score-box">
+                        <div class="score-label">Runs</div>
+                        <div class="score-value" id="teamBScore">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label">Wickets</div>
+                        <div class="score-value" id="teamBWickets">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label">Overs</div>
+                        <div class="score-value" id="teamBOvers">0.0</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 15px 0; text-align: center;">
+                    <small style="color: #666; display: block; margin-bottom: 8px;">Quick Add Runs</small>
+                    <div class="runs-quick">
+                        <button class="btn btn-primary" onclick="addRunsB(1)">+1</button>
+                        <button class="btn btn-primary" onclick="addRunsB(2)">+2</button>
+                        <button class="btn btn-primary" onclick="addRunsB(4)">+4</button>
+                        <button class="btn btn-primary" onclick="addRunsB(6)">+6</button>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 12px 0; text-align: center;">
+                    <small style="color: #666; display: block; margin-bottom: 8px;">Ball Types</small>
+                    <div class="runs-quick">
+                        <button class="btn btn-warning" onclick="addBallTypeB('dot')">Dot</button>
+                        <button class="btn btn-warning" onclick="addBallTypeB('wd')">Wide</button>
+                        <button class="btn btn-warning" onclick="addBallTypeB('nb')">No Ball</button>
+                        <button class="btn btn-warning" onclick="addBallTypeB('bye')">Bye</button>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-success" onclick="addRunB()">+ 1 Run</button>
+                    <button class="btn btn-warning" onclick="addWicketB()">Wicket</button>
+                    <button class="btn btn-info" onclick="nextBallB()">Next Ball</button>
+                </div>
+
+                <div class="overs-controls">
+                    <div class="control-group">
+                        <button class="btn btn-danger" onclick="subtractRunB()">- Run</button>
+                        <button class="btn btn-danger" onclick="subtractWicketB()">- Wicket</button>
+                    </div>
+                    <div class="control-group">
+                        <button class="btn btn-danger" onclick="subtractOverB()">- Over</button>
+                        <button class="btn btn-danger" onclick="resetTeamB()">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary">
+            <h2>Match Summary</h2>
+            <div class="summary-content">
+                <div class="summary-team" style="border-left: 5px solid #ff6b6b;">
+                    <h3 id="summaryTeamA">Team A</h3>
+                    <p><strong id="summaryScoreA">0/0</strong> in <strong id="summaryOversA">0.0</strong> overs</p>
+                    <p>Run Rate: <strong id="summaryRRA">0.00</strong></p>
+                </div>
+                <div class="summary-team" style="border-left: 5px solid #4ecdc4;">
+                    <h3 id="summaryTeamB">Team B</h3>
+                    <p><strong id="summaryScoreB">0/0</strong> in <strong id="summaryOversB">0.0</strong> overs</p>
+                    <p>Run Rate: <strong id="summaryRRB">0.00</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Team A
+        let teamAScore = 0, teamAWickets = 0, teamAOvers = 0, teamABalls = 0;
+        let teamBScore = 0, teamBWickets = 0, teamBOvers = 0, teamBBalls = 0;
+
+        // Team name handlers
+        document.getElementById('teamAInput').addEventListener('change', function() {
+            const name = this.value.trim() || 'Team A';
+            document.getElementById('teamAName').textContent = name;
+            document.getElementById('summaryTeamA').textContent = name;
+        });
+
+        document.getElementById('teamBInput').addEventListener('change', function() {
+            const name = this.value.trim() || 'Team B';
+            document.getElementById('teamBName').textContent = name;
+            document.getElementById('summaryTeamB').textContent = name;
+        });
+
+        // Team A Functions
+        function addRunA() {
+            teamAScore++;
+            nextBallA();
+        }
+
+        function addRunsA(runs) {
+            teamAScore += runs;
+            nextBallA();
+        }
+
+        function addBallTypeA(type) {
+            switch(type) {
+                case 'dot':
+                    nextBallA();
+                    break;
+                case 'wd':
+                    teamAScore++;
+                    // Wide doesn't count as ball
+                    updateTeamA();
+                    break;
+                case 'nb':
+                    teamAScore++;
+                    // No ball doesn't count as ball
+                    updateTeamA();
+                    break;
+                case 'bye':
+                    teamAScore++;
+                    nextBallA();
+                    break;
+            }
+        }
+
+        function nextBallA() {
+            teamABalls++;
+            if (teamABalls === 6) {
+                teamAOvers++;
+                teamABalls = 0;
+            }
+            updateTeamA();
+        }
+
+        function addWicketA() {
+            if (teamAWickets < 10) {
+                teamAWickets++;
+            }
+            nextBallA();
+        }
+
+        function subtractRunA() {
+            if (teamAScore > 0) teamAScore--;
+            updateTeamA();
+        }
+
+        function subtractWicketA() {
+            if (teamAWickets > 0) teamAWickets--;
+            updateTeamA();
+        }
+
+        function subtractOverA() {
+            if (teamABalls > 0) {
+                teamABalls--;
+            } else if (teamAOvers > 0) {
+                teamAOvers--;
+                teamABalls = 5;
+            }
+            updateTeamA();
+        }
+
+        function resetTeamA() {
+            teamAScore = 0;
+            teamAWickets = 0;
+            teamAOvers = 0;
+            teamABalls = 0;
+            updateTeamA();
+        }
+
+        // Team B Functions
+        function addRunB() {
+            teamBScore++;
+            nextBallB();
+        }
+
+        function addRunsB(runs) {
+            teamBScore += runs;
+            nextBallB();
+        }
+
+        function addBallTypeB(type) {
+            switch(type) {
+                case 'dot':
+                    nextBallB();
+                    break;
+                case 'wd':
+                    teamBScore++;
+                    // Wide doesn't count as ball
+                    updateTeamB();
+                    break;
+                case 'nb':
+                    teamBScore++;
+                    // No ball doesn't count as ball
+                    updateTeamB();
+                    break;
+                case 'bye':
+                    teamBScore++;
+                    nextBallB();
+                    break;
+            }
+        }
+
+        function nextBallB() {
+            teamBBalls++;
+            if (teamBBalls === 6) {
+                teamBOvers++;
+                teamBBalls = 0;
+            }
+            updateTeamB();
+        }
+
+        function addWicketB() {
+            if (teamBWickets < 10) {
+                teamBWickets++;
+            }
+            nextBallB();
+        }
+
+        function subtractRunB() {
+            if (teamBScore > 0) teamBScore--;
+            updateTeamB();
+        }
+
+        function subtractWicketB() {
+            if (teamBWickets > 0) teamBWickets--;
+            updateTeamB();
+        }
+
+        function subtractOverB() {
+            if (teamBBalls > 0) {
+                teamBBalls--;
+            } else if (teamBOvers > 0) {
+                teamBOvers--;
+                teamBBalls = 5;
+            }
+            updateTeamB();
+        }
+
+        function resetTeamB() {
+            teamBScore = 0;
+            teamBWickets = 0;
+            teamBOvers = 0;
+            teamBBalls = 0;
+            updateTeamB();
+        }
+
+        // Update Display
+        function updateTeamA() {
+            document.getElementById('teamAScore').textContent = teamAScore;
+            document.getElementById('teamAWickets').textContent = teamAWickets;
+            document.getElementById('teamAOvers').textContent = (teamAOvers + '.' + teamABalls);
+            updateSummary();
+        }
+
+        function updateTeamB() {
+            document.getElementById('teamBScore').textContent = teamBScore;
+            document.getElementById('teamBWickets').textContent = teamBWickets;
+            document.getElementById('teamBOvers').textContent = (teamBOvers + '.' + teamBBalls);
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const totalOversA = teamAOvers + (teamABalls / 6);
+            const totalOversB = teamBOvers + (teamBBalls / 6);
+            const rrA = totalOversA > 0 ? (teamAScore / totalOversA).toFixed(2) : '0.00';
+            const rrB = totalOversB > 0 ? (teamBScore / totalOversB).toFixed(2) : '0.00';
+
+            document.getElementById('summaryScoreA').textContent = teamAScore + '/' + teamAWickets;
+            document.getElementById('summaryOversA').textContent = (teamAOvers + '.' + teamABalls);
+            document.getElementById('summaryRRA').textContent = rrA;
+
+            document.getElementById('summaryScoreB').textContent = teamBScore + '/' + teamBWickets;
+            document.getElementById('summaryOversB').textContent = (teamBOvers + '.' + teamBBalls);
+            document.getElementById('summaryRRB').textContent = rrB;
+        }
+
+        // Initialize
+        updateTeamA();
+        updateTeamB();
+    </script>
+</body>
+</html>
