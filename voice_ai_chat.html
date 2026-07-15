@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA - AI Voice Assistant</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #0b0813;
+      --panel-bg: rgba(18, 14, 32, 0.7);
+      --panel-border: rgba(138, 43, 226, 0.15);
+      --accent-purple: #8a2be2;
+      --accent-cyan: #00f0ff;
+      --accent-pink: #ff007f;
+      --text-main: #f3efff;
+      --text-muted: #9f96b9;
+      --glass-blur: blur(16px);
+      --shadow-color: rgba(138, 43, 226, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 50% 30%, #17112e 0%, var(--bg-color) 70%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* Ambient background glows */
+    .glow-bg {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.2) 0%, transparent 70%);
+      top: 15%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(40px);
+    }
+
+    header {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: var(--panel-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px var(--shadow-color);
+      z-index: 10;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-pulse {
+      width: 12px;
+      height: 12px;
+      background-color: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan);
+      position: relative;
+    }
+
+    .logo-pulse::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: var(--accent-cyan);
+      border-radius: 50%;
+      animation: ripple 2s infinite ease-out;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      background: linear-gradient(135deg, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+    }
+
+    .status-badge {
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    /* Core container */
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      margin: 30px 0;
+      position: relative;
+    }
+
+    /* Animated voice orb wrapper */
+    .orb-wrapper {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .orb-bg-glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.45) 0%, transparent 70%);
+      filter: blur(20px);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1;
+    }
+
+    .orb-outer-ring {
+      position: absolute;
+      width: 110%;
+      height: 110%;
+      border-radius: 50%;
+      border: 2px dashed rgba(138, 43, 226, 0.3);
+      animation: rotateRing 30s linear infinite;
+      z-index: 2;
+      pointer-events: none;
+      transition: all 0.5s ease;
+    }
+
+    @keyframes rotateRing {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Soundwave canvas inside the orb */
+    .orb-canvas-container {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #130f24, #08060f);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 10px 40px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      transition: all 0.3s ease;
+    }
+
+    .orb-canvas-container:hover {
+      border-color: rgba(138, 43, 226, 0.4);
+      transform: scale(1.02);
+    }
+
+    #voiceWaveCanvas {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+    }
+
+    .mic-icon-overlay {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0.8;
+      transition: all 0.3s ease;
+      color: var(--text-main);
+    }
+
+    /* Active states for orb and badges */
+    body.state-idle .orb-bg-glow {
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.35) 0%, transparent 70%);
+    }
+    body.state-idle .status-dot {
+      background-color: var(--text-muted);
+      box-shadow: none;
+    }
+    body.state-idle .mic-icon-overlay {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+
+    body.state-listening .orb-bg-glow {
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.5) 0%, transparent 70%);
+      transform: scale(1.1);
+    }
+    body.state-listening .orb-outer-ring {
+      border-color: rgba(0, 240, 255, 0.5);
+      animation-duration: 8s;
+    }
+    body.state-listening .status-dot {
+      background-color: var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+    body.state-listening .status-badge {
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--accent-cyan);
+    }
+    body.state-listening .mic-icon-overlay {
+      transform: scale(1.15);
+      opacity: 1;
+      color: var(--accent-cyan);
+      filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5));
+    }
+
+    body.state-thinking .orb-bg-glow {
+      background: radial-gradient(circle, rgba(255, 0, 127, 0.45) 0%, transparent 70%);
+      transform: scale(1.05);
+    }
+    body.state-thinking .orb-outer-ring {
+      border-color: rgba(255, 0, 127, 0.5);
+      animation-duration: 3s;
+    }
+    body.state-thinking .status-dot {
+      background-color: var(--accent-pink);
+      box-shadow: 0 0 10px var(--accent-pink);
+    }
+    body.state-thinking .status-badge {
+      border-color: rgba(255, 0, 127, 0.3);
+      color: var(--accent-pink);
+    }
+    body.state-thinking .mic-icon-overlay {
+      transform: scale(0.8);
+      opacity: 0.2;
+    }
+
+    body.state-speaking .orb-bg-glow {
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.55) 0%, transparent 70%);
+      transform: scale(1.08);
+    }
+    body.state-speaking .orb-outer-ring {
+      border-color: rgba(138, 43, 226, 0.5);
+      animation-duration: 15s;
+    }
+    body.state-speaking .status-dot {
+      background-color: var(--accent-purple);
+      box-shadow: 0 0 10px var(--accent-purple);
+    }
+    body.state-speaking .status-badge {
+      border-color: rgba(138, 43, 226, 0.3);
+      color: #c79eff;
+    }
+    body.state-speaking .mic-icon-overlay {
+      transform: scale(0.9);
+      opacity: 0.3;
+    }
+
+    /* Live Voice Subtitle Bar */
+    .subtitle-container {
+      width: 100%;
+      text-align: center;
+      min-height: 48px;
+      padding: 0 20px;
+    }
+
+    .subtitle-text {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--text-main);
+      opacity: 0.95;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+    }
+
+    .subtitle-text.interim {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .subtitle-text:empty::after {
+      content: 'Tap the orb to start conversation';
+      opacity: 0.5;
+      font-weight: 400;
+      font-size: 1rem;
+    }
+
+    /* Expandable Chat Log Panel */
+    .chat-container {
+      width: 100%;
+      max-width: 600px;
+      height: 250px;
+      background: var(--panel-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .chat-header {
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .clear-chat-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s;
+    }
+
+    .clear-chat-btn:hover {
+      color: var(--accent-pink);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    /* Chat bubble styling */
+    .message-bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      line-height: 1.45;
+      font-size: 0.95rem;
+      animation: bubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      word-wrap: break-word;
+    }
+
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .message-bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 191, 255, 0.05) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-bottom-right-radius: 4px;
+      color: #d7f9ff;
+    }
+
+    .message-bubble.ai {
+      align-self: flex-start;
+      background: linear-gradient(135deg, rgba(138, 43, 226, 0.15) 0%, rgba(75, 0, 130, 0.05) 100%);
+      border: 1px solid rgba(138, 43, 226, 0.25);
+      border-bottom-left-radius: 4px;
+      color: #f0e6ff;
+    }
+
+    /* Custom scrollbar for chat logs */
+    .chat-messages::-webkit-scrollbar {
+      width: 6px;
+    }
+    .chat-messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Fallback keyboard entry footer */
+    .input-bar {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .text-input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .text-input {
+      width: 100%;
+      background: var(--panel-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .text-input:focus {
+      border-color: rgba(138, 43, 226, 0.45);
+      box-shadow: 0 0 15px rgba(138, 43, 226, 0.25);
+    }
+
+    .text-input::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--accent-purple) 0%, #6a0dad 100%);
+      border: none;
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+      transition: all 0.3s;
+    }
+
+    .send-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(138, 43, 226, 0.5);
+    }
+
+    .send-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Floating buttons for settings/voices */
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .control-btn {
+      background: var(--panel-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .control-btn:hover {
+      border-color: rgba(138, 43, 226, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--accent-cyan);
+    }
+
+    /* Modal / Drawer Styling */
+    .settings-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .settings-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .settings-modal {
+      width: 90%;
+      max-width: 500px;
+      background: #110d21;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 80px rgba(138, 43, 226, 0.15);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .settings-backdrop.open .settings-modal {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .close-modal-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .close-modal-btn:hover {
+      color: white;
+    }
+
+    .setting-group {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .setting-input, .setting-select {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+      color: white;
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    .setting-input:focus, .setting-select:focus {
+      border-color: var(--accent-purple);
+    }
+
+    .setting-slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .setting-slider {
+      flex: 1;
+      accent-color: var(--accent-purple);
+    }
+
+    .slider-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      min-width: 30px;
+      text-align: right;
+    }
+
+    /* Warning/Support banners */
+    .unsupported-banner {
+      display: none;
+      width: 100%;
+      max-width: 800px;
+      background: rgba(255, 0, 127, 0.15);
+      border: 1px solid rgba(255, 0, 127, 0.3);
+      color: #ff9ebb;
+      padding: 12px 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      header {
+        border-radius: 16px;
+      }
+      .orb-wrapper {
+        width: 200px;
+        height: 200px;
+      }
+      .orb-canvas-container {
+        width: 170px;
+        height: 170px;
+      }
+      .subtitle-text {
+        font-size: 1rem;
+      }
+      .chat-container {
+        height: 200px;
+      }
+    }
+  </style>
+</head>
+<body class="state-idle">
+
+  <div class="glow-bg"></div>
+
+  <!-- Browser Speech Support Alert -->
+  <div id="browserAlert" class="unsupported-banner">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    <span><strong>Note:</strong> Your browser has limited support for speech features. For the full voice conversation experience, we recommend using Google Chrome or Microsoft Edge.</span>
+  </div>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-pulse"></div>
+      <h1>AURA</h1>
+    </div>
+    <div id="statusBadge" class="status-badge">
+      <div class="status-dot"></div>
+      <span id="statusLabel">Ready</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Visual Voice Orb -->
+    <div class="orb-wrapper" id="orbWrapper" title="Click to speak with AURA">
+      <div class="orb-bg-glow"></div>
+      <div class="orb-outer-ring"></div>
+      <div class="orb-canvas-container">
+        <canvas id="voiceWaveCanvas" width="220" height="220"></canvas>
+        <div class="mic-icon-overlay">
+          <!-- Mic / Speaker Icons inside Orb -->
+          <svg id="micIcon" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 0 3-3v-6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live transcription / Subtitles -->
+    <div class="subtitle-container">
+      <p id="subtitleText" class="subtitle-text"></p>
+    </div>
+
+    <!-- Interactive Chat bubbles -->
+    <div class="chat-container">
+      <div class="chat-header">
+        <span class="chat-header-title">Transcripts</span>
+        <button id="clearChatBtn" class="clear-chat-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+          Clear History
+        </button>
+      </div>
+      <div id="chatMessages" class="chat-messages">
+        <!-- Message bubbles get appended here -->
+      </div>
+    </div>
+
+    <!-- Controls bottom-row -->
+    <div class="controls-row">
+      <button id="speakTestBtn" class="control-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg>
+        Replay Last Response
+      </button>
+      <button id="settingsBtn" class="control-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+        Configure Settings
+      </button>
+    </div>
+
+    <!-- Fallback Text Input Row -->
+    <form id="textForm" class="input-bar">
+      <div class="text-input-wrapper">
+        <input type="text" id="textInput" class="text-input" placeholder="Type a message or click the orb to talk..." autocomplete="off" />
+      </div>
+      <button type="submit" class="send-btn" aria-label="Send message">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" /></svg>
+      </button>
+    </form>
+  </main>
+
+  <!-- Settings backdrop modal -->
+  <div id="settingsBackdrop" class="settings-backdrop">
+    <div class="settings-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Control Panel</h2>
+        <button id="closeModalBtn" class="close-modal-btn" aria-label="Close settings">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <div class="setting-group">
+        <label for="apiKeyInput" class="setting-label">Gemini API Key</label>
+        <input type="password" id="apiKeyInput" class="setting-input" placeholder="Paste your API key here (Optional)" />
+        <span style="font-size: 0.75rem; color: var(--text-muted)">If empty, Aura will run using interactive offline logic.</span>
+      </div>
+
+      <div class="setting-group">
+        <label for="voiceSelect" class="setting-label">Assistant Voice</label>
+        <select id="voiceSelect" class="setting-select">
+          <option value="">Default System Voice</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="rateSlider" class="setting-label">Speech Speed</label>
+        <div class="setting-slider-container">
+          <input type="range" id="rateSlider" class="setting-slider" min="0.5" max="2" step="0.1" value="1" />
+          <span id="rateVal" class="slider-val">1.0x</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label for="pitchSlider" class="setting-label">Voice Pitch</label>
+        <div class="setting-slider-container">
+          <input type="range" id="pitchSlider" class="setting-slider" min="0.5" max="1.5" step="0.1" value="1.0" />
+          <span id="pitchVal" class="slider-val">1.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration & State
+    let apiKey = localStorage.getItem('aura_api_key') || 'AQ.Ab8RN6K-OK_8FVcXAxbosM7ZKWD0HNQUo84lxX1psiNKsh5VtA';
+    let selectedVoiceName = localStorage.getItem('aura_voice_name') || '';
+    let speechRate = parseFloat(localStorage.getItem('aura_speech_rate')) || 1.0;
+    let speechPitch = parseFloat(localStorage.getItem('aura_speech_pitch')) || 1.0;
+    
+    let isListening = false;
+    let currentResponse = '';
+    let lastRecognizedSpeech = '';
+    let currentAppState = 'idle'; // idle | listening | thinking | speaking
+
+    // DOM Elements
+    const body = document.body;
+    const orbWrapper = document.getElementById('orbWrapper');
+    const voiceWaveCanvas = document.getElementById('voiceWaveCanvas');
+    const subtitleText = document.getElementById('subtitleText');
+    const chatMessages = document.getElementById('chatMessages');
+    const textForm = document.getElementById('textForm');
+    const textInput = document.getElementById('textInput');
+    const statusLabel = document.getElementById('statusLabel');
+    const speakTestBtn = document.getElementById('speakTestBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsBackdrop = document.getElementById('settingsBackdrop');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rateSlider = document.getElementById('rateSlider');
+    const rateVal = document.getElementById('rateVal');
+    const pitchSlider = document.getElementById('pitchSlider');
+    const pitchVal = document.getElementById('pitchVal');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const browserAlert = document.getElementById('browserAlert');
+
+    // Speech API Variables
+    let recognition;
+    let synth = window.speechSynthesis;
+    let voices = [];
+
+    // Initialize UI settings values
+    apiKeyInput.value = apiKey;
+    rateSlider.value = speechRate;
+    rateVal.textContent = speechRate.toFixed(1) + 'x';
+    pitchSlider.value = speechPitch;
+    pitchVal.textContent = speechPitch.toFixed(1);
+
+    // Initial check for Speech Recognition support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      browserAlert.style.display = 'flex';
+    }
+
+    // Populate System Voices
+    function loadVoices() {
+      if (!synth) return;
+      voices = synth.getVoices();
+      
+      // Filter out non-english/standard voices if you wish, or present all
+      voiceSelect.innerHTML = '<option value="">Default System Voice</option>';
+      voices.forEach(voice => {
+        const option = document.createElement('option');
+        option.value = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        if (voice.name === selectedVoiceName) {
+          option.selected = true;
+        }
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    if (synth) {
+      loadVoices();
+      if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = loadVoices;
+      }
+    }
+
+    // Voice Wave Canvas Visualizer Animation
+    const ctx = voiceWaveCanvas.getContext('2d');
+    let animationFrameId;
+    let waveOffset = 0;
+
+    function drawWave() {
+      ctx.clearRect(0, 0, voiceWaveCanvas.width, voiceWaveCanvas.height);
+      const width = voiceWaveCanvas.width;
+      const height = voiceWaveCanvas.height;
+      const centerY = height / 2;
+
+      waveOffset += 0.05;
+
+      if (currentAppState === 'idle') {
+        // Draw calm, slow breathing waves
+        ctx.strokeStyle = 'rgba(138, 43, 226, 0.4)';
+        ctx.lineWidth = 1.5;
+        
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const y = centerY + Math.sin(x * 0.02 + waveOffset) * 8 * Math.sin(x * 0.005);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const y = centerY + Math.sin(x * 0.035 - waveOffset * 0.7) * 5 * Math.sin(x * 0.005);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+      } else if (currentAppState === 'listening') {
+        // Draw responsive, energetic waves
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+        ctx.lineWidth = 2.5;
+
+        // Wave 1
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const progress = x / width;
+          const envelope = Math.sin(progress * Math.PI); // Pin ends to zero
+          const noise = (Math.random() - 0.5) * 4;
+          const y = centerY + Math.sin(x * 0.06 + waveOffset * 2.5) * (20 + noise) * envelope;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Wave 2
+        ctx.strokeStyle = 'rgba(138, 43, 226, 0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const progress = x / width;
+          const envelope = Math.sin(progress * Math.PI);
+          const y = centerY + Math.sin(x * 0.04 - waveOffset * 1.8) * 14 * envelope;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+      } else if (currentAppState === 'thinking') {
+        // Draw swirling concentric orbits or rotating patterns
+        ctx.strokeStyle = 'rgba(255, 0, 127, 0.7)';
+        ctx.lineWidth = 3;
+        
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.rotate(waveOffset * 1.5);
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, 45, 0, Math.PI * 1.2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        ctx.rotate(-waveOffset * 2.5);
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, 0, Math.PI * 0.8);
+        ctx.stroke();
+
+        ctx.restore();
+
+      } else if (currentAppState === 'speaking') {
+        // Draw modulated human speech waveform
+        ctx.strokeStyle = 'rgba(138, 43, 226, 0.8)';
+        ctx.lineWidth = 3;
+
+        const volumeModifier = Math.sin(waveOffset * 3) * 0.5 + 0.8; // oscillates representing word breaks
+
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const progress = x / width;
+          const envelope = Math.sin(progress * Math.PI);
+          const y = centerY + Math.sin(x * 0.055 + waveOffset * 3) * 35 * envelope * volumeModifier;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Overlay accent line
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let x = 0; x < width; x++) {
+          const progress = x / width;
+          const envelope = Math.sin(progress * Math.PI);
+          const y = centerY + Math.sin(x * 0.09 - waveOffset * 2.2) * 18 * envelope * volumeModifier;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      animationFrameId = requestAnimationFrame(drawWave);
+    }
+    
+    // Start drawing canvas waves immediately
+    drawWave();
+
+    // App state machine
+    function transitionState(newState) {
+      currentAppState = newState;
+      body.className = ''; // Reset CSS states
+      body.classList.add(`state-${newState}`);
+
+      if (newState === 'idle') {
+        statusLabel.textContent = 'Ready';
+        isListening = false;
+      } else if (newState === 'listening') {
+        statusLabel.textContent = 'Listening...';
+        isListening = true;
+      } else if (newState === 'thinking') {
+        statusLabel.textContent = 'Thinking...';
+        isListening = false;
+      } else if (newState === 'speaking') {
+        statusLabel.textContent = 'AURA speaking';
+        isListening = false;
+      }
+    }
+
+    // Append a transcript bubble to the container
+    function appendMessage(sender, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `message-bubble ${sender}`;
+      bubble.textContent = text;
+      chatMessages.appendChild(bubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Speech-to-Text Recognition Setup
+    function initSpeechRecognition() {
+      if (!SpeechRecognition) return;
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        transitionState('listening');
+        subtitleText.textContent = '';
+        subtitleText.classList.remove('interim');
+        stopAIVoice(); // Interrupt AI if it was speaking
+      };
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          lastRecognizedSpeech = finalTranscript;
+          subtitleText.textContent = finalTranscript;
+          subtitleText.classList.remove('interim');
+        } else {
+          subtitleText.textContent = interimTranscript;
+          subtitleText.classList.add('interim');
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          subtitleText.textContent = 'Microphone permission denied. Please allow mic access.';
+        } else {
+          subtitleText.textContent = `Recognition error: ${event.error}`;
+        }
+        transitionState('idle');
+      };
+
+      recognition.onend = () => {
+        if (lastRecognizedSpeech.trim()) {
+          const userQuery = lastRecognizedSpeech;
+          lastRecognizedSpeech = '';
+          handleUserInteraction(userQuery);
+        } else {
+          transitionState('idle');
+        }
+      };
+    }
+
+    initSpeechRecognition();
+
+    function toggleSpeechListening() {
+      if (!SpeechRecognition) {
+        alert('Voice Input is not supported by your current browser. Please type your query below.');
+        return;
+      }
+
+      if (isListening) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('Recognition already started or error occurred:', e);
+        }
+      }
+    }
+
+    // Text-to-Speech Output
+    function speakAIResponse(text) {
+      if (!synth) return;
+
+      // Stop any active speech
+      synth.cancel();
+
+      // Store response locally for the Replay button
+      currentResponse = text;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Load Voice configurations
+      if (selectedVoiceName) {
+        const matchingVoice = voices.find(v => v.name === selectedVoiceName);
+        if (matchingVoice) utterance.voice = matchingVoice;
+      }
+      utterance.rate = speechRate;
+      utterance.pitch = speechPitch;
+
+      utterance.onstart = () => {
+        transitionState('speaking');
+      };
+
+      utterance.onend = () => {
+        // Return to idle state unless speaker was interrupted
+        if (currentAppState === 'speaking') {
+          transitionState('idle');
+        }
+      };
+
+      utterance.onerror = (err) => {
+        console.error('TTS speech synthesis error:', err);
+        transitionState('idle');
+      };
+
+      synth.speak(utterance);
+    }
+
+    function stopAIVoice() {
+      if (synth && synth.speaking) {
+        synth.cancel();
+      }
+    }
+
+    // Process user request (either voice or typing)
+    async function handleUserInteraction(text) {
+      const cleanText = text.trim();
+      if (!cleanText) return;
+
+      appendMessage('user', cleanText);
+      subtitleText.textContent = 'Processing request...';
+      transitionState('thinking');
+
+      try {
+        const responseText = await getAIResponse(cleanText);
+        subtitleText.textContent = responseText;
+        appendMessage('ai', responseText);
+        speakAIResponse(responseText);
+      } catch (error) {
+        console.error('Error getting response:', error);
+        const fallbackText = getOfflineFallback(cleanText);
+        subtitleText.textContent = fallbackText;
+        appendMessage('ai', fallbackText);
+        speakAIResponse(fallbackText);
+      }
+    }
+
+    // Contact Gemini API
+    async function getAIResponse(query) {
+      if (!apiKey || apiKey.startsWith('AQ.Ab8RN6K-')) {
+        // Force fallback if no valid key is provided
+        throw new Error('Using fallback mode or default dummy key');
+      }
+
+      const prompt = `You are AURA, an elegant, concise, and helpful voice assistant. You are answering a question via voice. Respond in under 3 sentences using clean natural language, avoiding code blocks, Markdown symbols, bullet points, or complex math so it can be spoken out loud smoothly. User question: "${query}"`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 200
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API failed: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!content) {
+        throw new Error('Empty response from model');
+      }
+
+      return content.trim();
+    }
+
+    // Offline conversation system (AURA Writer / Reply system depending on question)
+    function getOfflineFallback(query) {
+      const lowercase = query.toLowerCase();
+
+      // 1. Time query
+      if (lowercase.includes('time')) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `The current local time is ${timeString}.`;
+      }
+
+      // 2. Date query
+      if (lowercase.includes('date') || lowercase.includes('day')) {
+        const now = new Date();
+        const dateString = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+        return `Today is ${dateString}.`;
+      }
+
+      // 3. Name or Bio query
+      if (lowercase.includes('who are you') || lowercase.includes('your name') || lowercase.includes('aura')) {
+        return "I am Aura, your holographic voice AI companion. I run offline using preset modules, or online via the Gemini neural network.";
+      }
+
+      // 4. Weather query
+      if (lowercase.includes('weather') || lowercase.includes('temperature')) {
+        const forecasts = [
+          "It looks like a clear night with gentle cosmic winds.",
+          "Atmospheric pressure is optimal, and sky conditions look wonderful.",
+          "We have clean telemetry. The weather is perfect for writing some code."
+        ];
+        return forecasts[Math.floor(Math.random() * forecasts.length)];
+      }
+
+      // 5. Joke query
+      if (lowercase.includes('joke')) {
+        const jokes = [
+          "Why did the database administrator leave his wife? She had too many one-to-many relationships.",
+          "There are ten types of people in the world. Those who understand binary, and those who don't.",
+          "Why do programmers prefer dark mode? Because light attracts bugs.",
+          "How many programmers does it take to change a lightbulb? None, that's a hardware problem."
+        ];
+        return jokes[Math.floor(Math.random() * jokes.length)];
+      }
+
+      // 6. Greetings
+      if (lowercase.includes('hello') || lowercase.includes('hi ') || lowercase.startsWith('hi') || lowercase.includes('hey')) {
+        return "Hello! I am Aura. I can hear you clearly. How can I help you today?";
+      }
+
+      // 7. General fallback replies depending on question
+      const offlineAnswers = [
+        `That is an interesting question about "${query}". I am currently running in offline voice mode, but I can tell you jokes, the current time, or help you configure my API key in settings.`,
+        "I hear you loud and clear. Feel free to ask me something else, or configure your Gemini API Key in the settings panel to connect my cognitive core.",
+        `Regarding "${query}", that sounds fascinating! As an offline agent, my knowledge is limited, but I am ready to keep chatting with you.`,
+        "I received your voice prompt! If you connect your API key, I can research that in-depth and provide a rich answer."
+      ];
+
+      return offlineAnswers[Math.floor(Math.random() * offlineAnswers.length)];
+    }
+
+    // Initial Greeting from AURA on user interaction
+    let greeted = false;
+    function triggerInitialGreeting() {
+      if (greeted) return;
+      greeted = true;
+      const greeting = "Hello there! I am Aura, your voice assistant. Click on my orb or talk to me whenever you are ready.";
+      subtitleText.textContent = greeting;
+      appendMessage('ai', greeting);
+      speakAIResponse(greeting);
+    }
+
+    // Event Listeners
+    orbWrapper.addEventListener('click', () => {
+      if (!greeted) {
+        triggerInitialGreeting();
+      } else {
+        toggleSpeechListening();
+      }
+    });
+
+    // Handle Text Input Submission
+    textForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = textInput.value.trim();
+      if (!val) return;
+      textInput.value = '';
+      stopAIVoice();
+      if (!greeted) greeted = true;
+      handleUserInteraction(val);
+    });
+
+    // Replay/test speaker button
+    speakTestBtn.addEventListener('click', () => {
+      if (currentResponse) {
+        speakAIResponse(currentResponse);
+      } else {
+        const greeting = "No previous message found. Tap my orb to start talking.";
+        speakAIResponse(greeting);
+      }
+    });
+
+    // Settings Modal controls
+    settingsBtn.addEventListener('click', () => {
+      settingsBackdrop.classList.add('open');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      settingsBackdrop.classList.remove('open');
+    });
+
+    settingsBackdrop.addEventListener('click', (e) => {
+      if (e.target === settingsBackdrop) {
+        settingsBackdrop.classList.remove('open');
+      }
+    });
+
+    // Save configurations on update
+    apiKeyInput.addEventListener('change', () => {
+      apiKey = apiKeyInput.value.trim();
+      localStorage.setItem('aura_api_key', apiKey);
+    });
+
+    voiceSelect.addEventListener('change', () => {
+      selectedVoiceName = voiceSelect.value;
+      localStorage.setItem('aura_voice_name', selectedVoiceName);
+    });
+
+    rateSlider.addEventListener('input', () => {
+      speechRate = parseFloat(rateSlider.value);
+      rateVal.textContent = speechRate.toFixed(1) + 'x';
+      localStorage.setItem('aura_speech_rate', speechRate);
+    });
+
+    pitchSlider.addEventListener('input', () => {
+      speechPitch = parseFloat(pitchSlider.value);
+      pitchVal.textContent = speechPitch.toFixed(1);
+      localStorage.setItem('aura_speech_pitch', speechPitch);
+    });
+
+    // Clear history logs
+    clearChatBtn.addEventListener('click', () => {
+      chatMessages.innerHTML = '';
+      subtitleText.textContent = '';
+      stopAIVoice();
+      transitionState('idle');
+    });
+
+    // Accessibility focus controls
+    orbWrapper.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        orbWrapper.click();
+      }
+    });
+  </script>
+</body>
+</html>
