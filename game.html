@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fire Type Runner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="game-page">
+    <header class="hero game-hero">
+      <nav class="nav">
+        <div class="brand">Fire Type Runner</div>
+        <div>
+          <a href="index.html">Home</a>
+          <a href="chat.html">AI Chat</a>
+        </div>
+      </nav>
+
+      <div class="hero-content game-intro">
+        <div>
+          <p class="eyebrow">100-level mobile arcade</p>
+          <h1>Run, jump, attack, and survive the rising storm of crabs, ducks, and shock blasts.</h1>
+          <p class="description">
+            This Mario-inspired runner mixes jumping, running, fire attacks, shock attacks, coin collection, lives, and a flag finish on every level.
+          </p>
+          <div class="actions">
+            <a class="btn primary" href="index.html">Back home</a>
+            <button class="btn secondary" id="restartButton" type="button">Restart game</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="game-wrapper">
+      <section class="game-card">
+        <div class="hud">
+          <div class="hud-item">Level <span id="levelLabel">1</span></div>
+          <div class="hud-item">Coins <span id="coinLabel">0</span></div>
+          <div class="hud-item">Lives <span id="lifeLabel">3</span></div>
+          <div class="hud-item">Timer <span id="timerLabel">00:00</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="900" height="420"></canvas>
+
+        <div class="control-pad">
+          <button class="game-btn" type="button" data-action="left">◀ Left</button>
+          <button class="game-btn" type="button" data-action="run">▶ Run</button>
+          <button class="game-btn" type="button" data-action="jump">⬆ Jump</button>
+          <button class="game-btn" type="button" data-action="attack">🔥 Attack</button>
+          <button class="game-btn" type="button" data-action="shock">⚡ Shock</button>
+        </div>
+      </section>
+
+      <aside class="game-side">
+        <div class="info-card">
+          <h3>How to play</h3>
+          <p>Use the on-screen buttons or keyboard arrows to run, jump, attack, and use shock power. Collect coins and reach the flag to unlock the next level.</p>
+        </div>
+        <div class="info-card">
+          <h3>Level scaling</h3>
+          <p>Every level adds tougher enemies, more coins, and stronger attacks. Crabs and ducks become more dangerous as you climb to level 100.</p>
+        </div>
+        <div class="info-card">
+          <h3>Progress save</h3>
+          <p>Your level, coin score, and lives are saved in this browser so you can continue later.</p>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const levelLabel = document.getElementById('levelLabel');
+      const coinLabel = document.getElementById('coinLabel');
+      const lifeLabel = document.getElementById('lifeLabel');
+      const timerLabel = document.getElementById('timerLabel');
+      const restartButton = document.getElementById('restartButton');
+      const storageKey = 'fire-type-runner-progress';
+
+      const keys = { left: false, right: false, jump: false, attack: false, shock: false };
+      const controls = {
+        run: false,
+        jump: false,
+        attack: false,
+        shock: false
+      };
+
+      const player = {
+        x: 96,
+        y: 280,
+        width: 28,
+        height: 44,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        dir: 1,
+        attackCooldown: 0,
+        shockCooldown: 0,
+        invincible: 0,
+        flash: 0
+      };
+
+      let levelData = null;
+      let state = loadProgress();
+      let lastTime = 0;
+      let levelTimer = 75;
+      let levelElapsed = 0;
+      let gameMessage = '';
+      let gameStarted = false;
+
+      function loadProgress() {
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) {
+          return { level: 1, coins: 0, lives: 3, elapsed: 0 };
+        }
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return { level: 1, coins: 0, lives: 3, elapsed: 0 };
+        }
+      }
+
+      function saveProgress() {
+        localStorage.setItem(storageKey, JSON.stringify({ level: state.level, coins: state.coins, lives: state.lives, elapsed: state.elapsed }));
+      }
+
+      function formatTime(seconds) {
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(Math.floor(seconds % 60)).padStart(2, '0');
+        return `${mins}:${secs}`;
+      }
+
+      function startLevel() {
+        gameStarted = true;
+        gameMessage = '';
+        levelElapsed = 0;
+        levelTimer = Math.max(35, 75 - Math.floor((state.level - 1) / 10) * 4);
+        player.x = 96;
+        player.y = 280;
+        player.vx = 0;
+        player.vy = 0;
+        player.onGround = false;
+        player.dir = 1;
+        player.attackCooldown = 0;
+        player.shockCooldown = 0;
+        player.invincible = 0;
+        player.flash = 0;
+        levelData = buildLevel(state.level);
+        updateHud();
+      }
+
+      function buildLevel(level) {
+        const platforms = [
+          { x: 0, y: 390, width: 900, height: 40, kind: 'ground' },
+          { x: 120, y: 336, width: 140, height: 18, kind: 'platform' },
+          { x: 320, y: 300, width: 140, height: 18, kind: 'platform' },
+          { x: 520, y: 260, width: 130, height: 18, kind: 'platform' },
+          { x: 700, y: 220, width: 140, height: 18, kind: 'platform' },
+          { x: 780, y: 180, width: 100, height: 18, kind: 'platform' }
+        ];
+
+        const coins = [];
+        for (let i = 0; i < 6 + (level % 4); i += 1) {
+          coins.push({ x: 140 + i * 90 + (level % 3) * 16, y: 300 - (i % 2) * 38, collected: false });
+        }
+
+        const enemyCount = Math.min(6, 1 + Math.floor(level / 10) + (level % 3));
+        const enemies = [];
+        for (let i = 0; i < enemyCount; i += 1) {
+          const platform = platforms[i % 5 + 1];
+          enemies.push({
+            x: platform.x + 12 + i * 22,
+            y: platform.y - 24,
+            width: 24,
+            height: 24,
+            kind: i % 2 === 0 ? 'crab' : 'duck',
+            dir: i % 2 === 0 ? -1 : 1,
+            speed: 1.2 + level / 30,
+            health: 1 + Math.floor(level / 20),
+            alive: true
+          });
+        }
+
+        return {
+          platforms,
+          coins,
+          enemies,
+          attacks: [],
+          flag: { x: 830, y: 132, width: 18, height: 88 }
+        };
+      }
+
+      function updateHud() {
+        levelLabel.textContent = state.level;
+        coinLabel.textContent = state.coins;
+        lifeLabel.textContent = state.lives;
+      }
+
+      function resetGame() {
+        state = { level: 1, coins: 0, lives: 3, elapsed: 0 };
+        saveProgress();
+        startLevel();
+      }
+
+      function collideRect(a, b) {
+        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+      }
+
+      function hitPlayer() {
+        if (player.invincible > 0) {
+          return;
+        }
+        state.lives 
+        saveProgress();
+        if (state.lives <= 0) {
+          gameMessage = 'Game over. Restart to try again.';
+          gameStarted = false;
+          return;
+        }
+        player.invincible = 80;
+        player.flash = 12;
+        startLevel();
+      }
+
+      function finishLevel() {
+        state.coins += 20 + state.level;
+        state.level += 1;
+        saveProgress();
+        if (state.level > 100) {
+          gameMessage = 'You cleared all 100 levels!';
+          gameStarted = false;
+          return;
+        }
+        startLevel();
+      }
+
+      function update() {
+        if (!gameStarted) {
+          return;
+        }
+
+        levelElapsed += 1 / 60;
+        state.elapsed += 1 / 60;
+        updateHud();
+
+        if (levelElapsed >= levelTimer) {
+          hitPlayer();
+          return;
+        }
+
+        if (player.attackCooldown > 0) player.attackCooldown -= 1;
+        if (player.shockCooldown > 0) player.shockCooldown -= 1;
+        if (player.invincible > 0) player.invincible -= 1;
+        if (player.flash > 0) player.flash -= 1;
+
+        const runInput = controls.run || keys.right;
+        const leftInput = controls.left || keys.left;
+        if (leftInput && !runInput) {
+          player.vx = -3.8;
+        } else if (runInput) {
+          player.vx = 3.8;
+        } else {
+          player.vx *= 0.8;
+        }
+        player.dir = player.vx >= 0 ? 1 : -1;
+
+        if ((controls.jump || keys.jump) && player.onGround) {
+          player.vy = -10.8;
+          player.onGround = false;
+        }
+
+        if (controls.attack || keys.attack) {
+          if (player.attackCooldown === 0) {
+            levelData.attacks.push({
+              x: player.x + player.width / 2,
+              y: player.y + player.height / 2 - 6,
+              width: 18,
+              height: 10,
+              vx: player.dir * 8,
+              vy: 0,
+              kind: 'fire',
+              life: 26
+            });
+            player.attackCooldown = 12;
+          }
+        }
+
+        if (controls.shock || keys.shock) {
+          if (player.shockCooldown === 0) {
+            levelData.attacks.push({
+              x: player.x + player.width / 2 - 4,
+              y: player.y + player.height / 2 - 10,
+              width: 20,
+              height: 12,
+              vx: player.dir * 4,
+              vy: -1.2,
+              kind: 'shock',
+              life: 46
+            });
+            player.shockCooldown = 36;
+          }
+        }
+
+        player.vy += 0.42;
+        player.x += player.vx;
+        player.y += player.vy;
+
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.width > 900) player.x = 900 - player.width;
+
+        player.onGround = false;
+        levelData.platforms.forEach((platform) => {
+          if (collideRect({ x: player.x, y: player.y, width: player.width, height: player.height }, platform)) {
+            if (player.vy >= 0 && player.y + player.height - player.vy <= platform.y) {
+              player.y = platform.y - player.height;
+              player.vy = 0;
+              player.onGround = true;
+            }
+          }
+        });
+
+        if (player.y > 440) {
+          hitPlayer();
+          return;
+        }
+
+        levelData.coins.forEach((coin) => {
+          if (!coin.collected && collideRect({ x: player.x, y: player.y, width: player.width, height: player.height }, { x: coin.x, y: coin.y, width: 12, height: 12 })) {
+            coin.collected = true;
+            state.coins += 5;
+            saveProgress();
+          }
+        });
+
+        if (collideRect({ x: player.x, y: player.y, width: player.width, height: player.height }, levelData.flag)) {
+          finishLevel();
+          return;
+        }
+
+        levelData.enemies.forEach((enemy) => {
+          if (!enemy.alive) return;
+          enemy.x += enemy.dir * enemy.speed;
+          if (enemy.x < 20 || enemy.x + enemy.width > 860) {
+            enemy.dir *= -1;
+          }
+          const enemyBox = { x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height };
+          if (collideRect({ x: player.x, y: player.y, width: player.width, height: player.height }, enemyBox)) {
+            hitPlayer();
+            return;
+          }
+        });
+
+        levelData.attacks = levelData.attacks.filter((attack) => {
+          attack.x += attack.vx;
+          attack.y += attack.vy;
+          attack.life -= 1;
+          if (attack.kind === 'shock') {
+            attack.vy += 0.15;
+          }
+          const attackBox = { x: attack.x, y: attack.y, width: attack.width, height: attack.height };
+          let hitEnemy = false;
+          levelData.enemies.forEach((enemy) => {
+            if (!enemy.alive) return;
+            const enemyBox = { x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height };
+            if (collideRect(attackBox, enemyBox)) {
+              enemy.health -= attack.kind === 'shock' ? 2 : 1;
+              hitEnemy = true;
+              if (enemy.health <= 0) {
+                enemy.alive = false;
+              }
+            }
+          });
+          return attack.life > 0 && !hitEnemy;
+        });
+
+        timerLabel.textContent = formatTime(Math.max(0, Math.floor(levelTimer - levelElapsed)));
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        sky.addColorStop(0, '#ffac4d');
+        sky.addColorStop(1, '#ffe3b5');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#4f46e5';
+        ctx.beginPath();
+        ctx.moveTo(0, 290);
+        ctx.lineTo(130, 220);
+        ctx.lineTo(240, 270);
+        ctx.lineTo(340, 205);
+        ctx.lineTo(470, 250);
+        ctx.lineTo(620, 180);
+        ctx.lineTo(760, 240);
+        ctx.lineTo(900, 200);
+        ctx.lineTo(900, 420);
+        ctx.lineTo(0, 420);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(0, 390, canvas.width, 30);
+
+        levelData.platforms.forEach((platform) => {
+          ctx.fillStyle = '#7c2d12';
+          ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+          ctx.fillStyle = '#fb923c';
+          ctx.fillRect(platform.x, platform.y + 2, platform.width, 6);
+        });
+
+        levelData.coins.forEach((coin) => {
+          if (!coin.collected) {
+            ctx.fillStyle = '#fde68a';
+            ctx.beginPath();
+            ctx.arc(coin.x + 6, coin.y + 6, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        levelData.enemies.forEach((enemy) => {
+          if (!enemy.alive) return;
+          ctx.fillStyle = enemy.kind === 'crab' ? '#ef4444' : '#3b82f6';
+          ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(enemy.x + 4, enemy.y + 6, 6, 6);
+          ctx.fillRect(enemy.x + 14, enemy.y + 6, 6, 6);
+        });
+
+        levelData.attacks.forEach((attack) => {
+          ctx.fillStyle = attack.kind === 'shock' ? '#38bdf8' : '#f97316';
+          ctx.fillRect(attack.x, attack.y, attack.width, attack.height);
+        });
+
+        const playerPulse = player.invincible > 0 && player.flash % 2 === 0 ? '#fef3c7' : '#111827';
+        ctx.fillStyle = playerPulse;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillStyle = '#fb923c';
+        ctx.fillRect(player.x + 6, player.y + 8, 6, 10);
+        ctx.fillRect(player.x + 16, player.y + 8, 6, 10);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(levelData.flag.x, levelData.flag.y, 8, levelData.flag.height);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(levelData.flag.x + 8, levelData.flag.y + 6, 34, 24);
+
+        if (!gameStarted) {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 32px Arial';
+          ctx.fillText(gameMessage || 'Ready to run?', 240, 200);
+          ctx.font = '18px Arial';
+          ctx.fillText('Press the run button or keyboard arrows to begin.', 220, 240);
+        }
+      }
+
+      function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const delta = Math.min(0.032, (timestamp - lastTime) / 1000);
+        lastTime = timestamp;
+        update(delta);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
+          keys.left = true;
+          event.preventDefault();
+        }
+        if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
+          keys.right = true;
+          event.preventDefault();
+        }
+        if (event.key === 'ArrowUp' || event.key === ' ' || event.key.toLowerCase() === 'w') {
+          keys.jump = true;
+          event.preventDefault();
+        }
+        if (event.key.toLowerCase() === 'f') {
+          keys.attack = true;
+          event.preventDefault();
+        }
+        if (event.key.toLowerCase() === 's') {
+          keys.shock = true;
+          event.preventDefault();
+        }
+      });
+
+      document.addEventListener('keyup', (event) => {
+        if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') keys.left = false;
+        if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') keys.right = false;
+        if (event.key === 'ArrowUp' || event.key === ' ' || event.key.toLowerCase() === 'w') keys.jump = false;
+        if (event.key.toLowerCase() === 'f') keys.attack = false;
+        if (event.key.toLowerCase() === 's') keys.shock = false;
+      });
+
+      document.querySelectorAll('.game-btn').forEach((button) => {
+        button.addEventListener('pointerdown', () => {
+          const action = button.dataset.action;
+          if (action === 'left') controls.left = true;
+          if (action === 'run') controls.run = true;
+          if (action === 'jump') controls.jump = true;
+          if (action === 'attack') controls.attack = true;
+          if (action === 'shock') controls.shock = true;
+        });
+        button.addEventListener('pointerup', () => {
+          const action = button.dataset.action;
+          if (action === 'left') controls.left = false;
+          if (action === 'run') controls.run = false;
+          if (action === 'jump') controls.jump = false;
+          if (action === 'attack') controls.attack = false;
+          if (action === 'shock') controls.shock = false;
+        });
+        button.addEventListener('pointerleave', () => {
+          const action = button.dataset.action;
+          if (action === 'left') controls.left = false;
+          if (action === 'run') controls.run = false;
+          if (action === 'jump') controls.jump = false;
+          if (action === 'attack') controls.attack = false;
+          if (action === 'shock') controls.shock = false;
+        });
+      });
+
+      restartButton.addEventListener('click', resetGame);
+
+      updateHud();
+      startLevel();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
